@@ -119,7 +119,7 @@ public class FarmInfrastructure extends JFrame implements UiAndMainControlsFI{
             farmerTeam[i] = f;
         }
         
-        ccClient.send("infrastructureServerOnline");
+        String response = ccClient.send("infrastructureServerOnline");
     }
 
     /**

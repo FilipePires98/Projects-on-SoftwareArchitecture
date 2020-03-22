@@ -9,7 +9,11 @@ import fi.ccInterfaces.PathCCInt;
 import fi.ccInterfaces.StandingCCInt;
 import fi.ccInterfaces.StorehouseCCInt;
 import common.MessageProcessor;
+import common.SocketServerService;
 import fi.UiAndMainControlsFI;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Message processor for the Farm Infrastructure.
@@ -28,13 +32,16 @@ public class CCProxy implements MessageProcessor {
          * Message to be handled.
          */
         private String message;
+        
+        private SocketServerService out;
 
         /**
          * Constructor for the thread definition.
          * @param message Message to be handled.
          */
-        public ProcessingThread(String message) {
+        public ProcessingThread(SocketServerService out, String message) {
             this.message = message;
+            this.out=out;
         }
 
         /**
@@ -47,29 +54,29 @@ public class CCProxy implements MessageProcessor {
                 switch (processedMessage[0]) {
                 case "waitSimulationReady":
                     storeHouse.waitAllFarmersReady();
-                    fi.sendMessage("allFarmersrReadyWaiting");
+                    out.send("allFarmersrReadyWaiting");
                     break;
                 case "prepareOrder":
                     storeHouse.sendSelectionAndPrepareOrder(Integer.valueOf(processedMessage[1]),
                             Integer.valueOf(processedMessage[2]), Integer.valueOf(processedMessage[3]),
                             Integer.valueOf(processedMessage[4]));
                     standing.waitForAllFarmers();
-                    fi.sendMessage("allFarmersrReadyToStart");
+                   out.send("allFarmersrReadyToStart");
                     break;
                 case "startHarvestOrder":
                     standing.sendStartOrder();
                     granary.waitAllFarmersReadyToCollect();
-                    fi.sendMessage("allFarmersrReadyToCollect");
+                    out.send("allFarmersrReadyToCollect");
                     break;
                 case "collectOrder":
                     granary.sendCollectOrder();
                     granary.waitAllFarmersCollect();
-                    fi.sendMessage("allFarmersrReadyToReturn");
+                    out.send("allFarmersrReadyToReturn");
                     break;
                 case "returnOrder":
                     granary.sendReturnOrder();
                     storeHouse.waitAllFarmersReady();
-                    fi.sendMessage("allFarmersrReadyWaiting");
+                    out.send("allFarmersrReadyWaiting");
                     break;
                 case "stopHarvestOrder":
                     storeHouse.control("stopHarvest");
@@ -77,15 +84,18 @@ public class CCProxy implements MessageProcessor {
                     path.control("stopHarvest");
                     granary.control("stopHarvest");
                     storeHouse.waitAllFarmersReady();
-                    fi.sendMessage("allFarmersrReadyWaiting");
+                    out.send("allFarmersrReadyWaiting");
                     break;
                 case "endSimulationOrder":
                     storeHouse.control("endSimulation");
                     standing.control("endSimulation");
                     path.control("endSimulation");
                     granary.control("endSimulation");
+                    out.send("MessageProcessed");
+                    out.close();
                     fi.closeSocketClient();
                     fi.close();
+                    
                     break;
                 }
             } catch (StopHarvestException ex) {
@@ -148,8 +158,8 @@ public class CCProxy implements MessageProcessor {
      * @param message string containing the message to process
      */
     @Override
-    public void processMessage(String message) {
-        Thread processor = new Thread(new ProcessingThread(message));
+    public void processMessage(SocketServerService out, String message) {
+        Thread processor = new Thread(new ProcessingThread(out, message));
         processor.start();
     }
 

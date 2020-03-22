@@ -1,6 +1,7 @@
 package common;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -11,7 +12,19 @@ import java.util.logging.Logger;
  * 
  * @author Filipe Pires (85122) and João Alegria (85048)
  */
-public class SocketServer implements Runnable{
+public class SocketServer implements Runnable, SocketServerService{
+    
+    private Socket socket;
+    
+    /**
+     * Input stream of the socket.
+     */
+    private DataInputStream in;
+    
+    /**
+     * Output stream of the socket.
+     */
+    private DataOutputStream out;
     
     /**
      * Port assigned to the server.
@@ -40,16 +53,34 @@ public class SocketServer implements Runnable{
     @Override
     public void run() {
         try {
-            ServerSocket socket = new ServerSocket(this.port);
-            Socket inSocket = socket.accept();
-            DataInputStream socketInputStream = new DataInputStream(inSocket.getInputStream());
+            ServerSocket serverSocket = new ServerSocket(this.port);
+            this.socket = serverSocket.accept();
+            this.in = new DataInputStream(socket.getInputStream());
+            this.out = new DataOutputStream(socket.getOutputStream());
             String receivedMessage="a";
             while(!receivedMessage.equals("endSimulationOrder")){
-                receivedMessage=socketInputStream.readUTF();
+                receivedMessage=this.in.readUTF();
                 System.out.println("Transmitted Message: "+receivedMessage);
-                this.mp.processMessage(receivedMessage);
+                this.mp.processMessage(this,receivedMessage);
             }
-            socket.close();
+        } catch (IOException ex) {
+            Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    @Override
+    public void send(String message){
+        try {
+            this.out.writeUTF(message);
+        } catch (IOException ex) {
+            Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    @Override
+    public void close(){
+        try {
+            this.socket.close();
         } catch (IOException ex) {
             Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
         }

@@ -1,12 +1,44 @@
 package cc.utils;
 import cc.UiAndMainControlsCC;
 import common.MessageProcessor;
+import common.SocketServerService;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Class responsible for processing all the received messages from the Farm Infrastructure.
  * @author Filipe Pires (85122) and João Alegria (85048)
  */
 public class CCMessageProcessor implements MessageProcessor{
+    
+    private class ProcessingThread implements Runnable {
+
+        /**
+         * Message to be handled.
+         */
+        private String message;
+        
+        private DataOutputStream out;
+
+        /**
+         * Constructor for the thread definition.
+         * @param message Message to be handled.
+         */
+        public ProcessingThread(DataOutputStream out, String message) {
+            this.message = message;
+            this.out=out;
+        }
+
+        /**
+         * Main method defining the life-cycle of the message processing Thread.
+         */
+        @Override
+        public void run() {
+            
+        }
+    }
     
     /**
      * Instance of the Control Center whose messages are to be processed.
@@ -25,53 +57,71 @@ public class CCMessageProcessor implements MessageProcessor{
      * Processes the incoming messages in a sequential manner since the Control Center needs to process each message one at a time.
      * @param message formatted message with the code of what to execute.
      */
+
+    
+    
+    
     @Override
-    public void processMessage(String message) {
+    public void processMessage(SocketServerService out, String message) {
+//        Thread processor = new Thread(new ProcessingThread(out, message));
+//        processor.start();
         String[] processedMessage = message.split(";");
         switch(processedMessage[0]){
             case "presentInStorehouse":
-                this.cc.presentFarmerInStorehouse(Integer.valueOf(processedMessage[1]), Integer.valueOf(processedMessage[2]));
+                cc.presentFarmerInStorehouse(Integer.valueOf(processedMessage[1]), Integer.valueOf(processedMessage[2]));
+                out.send("MessageProcessed");
                 break;
             case "presentInStanding":
-                this.cc.presentFarmerInStandingArea(Integer.valueOf(processedMessage[1]), Integer.valueOf(processedMessage[2]));
+                cc.presentFarmerInStandingArea(Integer.valueOf(processedMessage[1]), Integer.valueOf(processedMessage[2]));
+                out.send("MessageProcessed");
                 break;
             case "presentInPath":
-                this.cc.presentFarmerInPath(Integer.valueOf(processedMessage[1]), Integer.valueOf(processedMessage[2]), Integer.valueOf(processedMessage[3]));
+                cc.presentFarmerInPath(Integer.valueOf(processedMessage[1]), Integer.valueOf(processedMessage[2]), Integer.valueOf(processedMessage[3]));
+                out.send("MessageProcessed");
                 break;
             case "presentInGranary":
-                this.cc.presentFarmerInGranary(Integer.valueOf(processedMessage[1]), Integer.valueOf(processedMessage[2]));
+                cc.presentFarmerInGranary(Integer.valueOf(processedMessage[1]), Integer.valueOf(processedMessage[2]));
+                out.send("MessageProcessed");
                 break;
             case "presentInCollecting":
-                this.cc.presentCollectingFarmer(Integer.valueOf(processedMessage[1]));
+                cc.presentCollectingFarmer(Integer.valueOf(processedMessage[1]));
+                out.send("MessageProcessed");
                 break;
             case "presentInStoring":
-                this.cc.presentStoringFarmer(Integer.valueOf(processedMessage[1]));
+                cc.presentStoringFarmer(Integer.valueOf(processedMessage[1]));
+                out.send("MessageProcessed");
                 break;
             case "updateGranaryCobs":
-                this.cc.updateGranaryCornCobs(Integer.valueOf(processedMessage[1]));
+                cc.updateGranaryCornCobs(Integer.valueOf(processedMessage[1]));
+                out.send("MessageProcessed");
                 break;
             case "updateStorehouseCobs":
-                this.cc.updateStorehouseCornCobs(Integer.valueOf(processedMessage[1]));
+                cc.updateStorehouseCornCobs(Integer.valueOf(processedMessage[1]));
+                out.send("MessageProcessed");
                 break;
             case "infrastructureServerOnline":
-                this.cc.initFIClient();
+                out.send("MessageProcessed");
+                cc.initFIClient();
                 break;
-            case "allFarmersrReadyToStart":
-                this.cc.enableStartBtn();
-                break;
-            case "allFarmersrReadyToCollect":
-                this.cc.enableCollectBtn();
-                break;
-            case "allFarmersrReadyToReturn":
-                this.cc.enableReturnBtn();
-                break;
-            case "allFarmersrReadyWaiting":
-                this.cc.enablePrepareBtn();
-                break;
+//            case "allFarmersrReadyToStart":
+//                this.cc.enableStartBtn();
+//                break;
+//            case "allFarmersrReadyToCollect":
+//                this.cc.enableCollectBtn();
+//                break;
+//            case "allFarmersrReadyToReturn":
+//                this.cc.enableReturnBtn();
+//                break;
+//            case "allFarmersrReadyWaiting":
+//                this.cc.enablePrepareBtn();
+//                break;
             case "endSimulationOrder":
-                this.cc.closeSocketClient();
-                this.cc.close();
+                out.send("MessageProcessed");
+                out.close();
+                cc.closeSocketClient();
+                cc.close();
                 break;
         }
+
     }
 }

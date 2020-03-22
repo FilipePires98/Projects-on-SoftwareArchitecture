@@ -994,8 +994,14 @@ public class ControlCenter extends javax.swing.JFrame implements UiAndMainContro
         this.maxStep.setEnabled(false);
 
         // Send message to FI to place farmer IDs in respective Storehouse positions
-        fiClient.send("prepareOrder;" + this.numFarmers.getValue() + ";" + this.numCornCobs.getValue() + ";"
-                + this.maxStep.getValue() + ";" + this.timeout.getValue());
+//        String response = fiClient.send("prepareOrder;" + this.numFarmers.getValue() + ";" + this.numCornCobs.getValue() + ";"
+//                + this.maxStep.getValue() + ";" + this.timeout.getValue());
+//        if(response.equals("allFarmersrReadyToStart")){
+//            this.enableStartBtn();
+//        }
+        Thread t1 = new Thread(new SendAndWaitCommand("prepareOrder;" + this.numFarmers.getValue() + ";" + this.numCornCobs.getValue() + ";" + this.maxStep.getValue() + ";" + this.timeout.getValue()));
+        t1.start();
+        
     }//GEN-LAST:event_prepareBtnMouseClicked
 
     /**
@@ -1012,7 +1018,13 @@ public class ControlCenter extends javax.swing.JFrame implements UiAndMainContro
         this.startBtn.setEnabled(false);
 
         // Send message to FI to update farmer positions (move to Path and then Granary)
-        fiClient.send("startHarvestOrder");
+//        String response = fiClient.send("startHarvestOrder");
+//        if(response.equals("allFarmersrReadyToCollect")){
+//            this.enableCollectBtn();
+//        }
+        
+        Thread t1 = new Thread(new SendAndWaitCommand("startHarvestOrder"));
+        t1.start();
     }//GEN-LAST:event_startBtnMouseClicked
 
     /**
@@ -1029,7 +1041,12 @@ public class ControlCenter extends javax.swing.JFrame implements UiAndMainContro
         this.collectBtn.setEnabled(false);
 
         // Send message to FI for farmers to grab corn cobs
-        fiClient.send("collectOrder");
+//        String response = fiClient.send("collectOrder");
+//        if(response.equals("allFarmersrReadyToReturn")){
+//            this.enableReturnBtn();
+//        }
+        Thread t1 = new Thread(new SendAndWaitCommand("collectOrder"));
+        t1.start();
     }//GEN-LAST:event_collectBtnMouseClicked
 
     /**
@@ -1047,7 +1064,12 @@ public class ControlCenter extends javax.swing.JFrame implements UiAndMainContro
 
         // Send message to FI to update farmer positions (move to Storehouse and then
         // deliver corn cobs)
-        fiClient.send("returnOrder");
+//        String response = fiClient.send("returnOrder");
+//        if(response.equals("allFarmersrReadyWaiting")){
+//            this.enablePrepareBtn();
+//        }
+        Thread t1 = new Thread(new SendAndWaitCommand("returnOrder"));
+        t1.start();
     }//GEN-LAST:event_returnBtnMouseClicked
 
     /**
@@ -1069,7 +1091,12 @@ public class ControlCenter extends javax.swing.JFrame implements UiAndMainContro
 
         // Send message to FI for farmers to immediately stop what they are doing and go
         // back to the Storehouse
-        fiClient.send("stopHarvestOrder");
+//        String response=fiClient.send("stopHarvestOrder");
+//        if(response.equals("allFarmersrReadyWaiting")){
+//            this.enablePrepareBtn();
+//        }
+        Thread t1 = new Thread(new SendAndWaitCommand("stopHarvestOrder"));
+        t1.start();
     }//GEN-LAST:event_stopBtnMouseClicked
 
     /**
@@ -1084,7 +1111,7 @@ public class ControlCenter extends javax.swing.JFrame implements UiAndMainContro
 
         // Send message to FI for farmers to kill themselves, close the sockets and end
         // the processes and UIs
-        fiClient.send("endSimulationOrder");
+        String response=fiClient.send("endSimulationOrder");
     }//GEN-LAST:event_exitBtnMouseClicked
 
     /**
@@ -1304,7 +1331,12 @@ public class ControlCenter extends javax.swing.JFrame implements UiAndMainContro
     @Override
     public void initFIClient() {
         this.fiClient = new SocketClient("localhost", 7777);
-        this.fiClient.send("waitSimulationReady");
+//        String response = this.fiClient.send("waitSimulationReady");
+//        if(response.equals("allFarmersrReadyWaiting")){
+//            this.enablePrepareBtn();
+//        }
+        Thread t1 = new Thread(new SendAndWaitCommand("waitSimulationReady"));
+        t1.start();
     }
     
     /**
@@ -1544,5 +1576,34 @@ public class ControlCenter extends javax.swing.JFrame implements UiAndMainContro
     @Override
     public void updateStorehouseCornCobs(int actualNumber) {
         storehouseCornCobs.setText(String.valueOf(actualNumber));
+    }
+    
+    private class SendAndWaitCommand implements Runnable{
+
+        private String command;
+
+        public SendAndWaitCommand(String command) {
+            this.command = command;
+        }
+        
+        @Override
+        public void run() {
+            String response = fiClient.send(this.command);
+            switch(response){
+                case "allFarmersrReadyToStart":
+                enableStartBtn();
+                break;
+            case "allFarmersrReadyToCollect":
+                enableCollectBtn();
+                break;
+            case "allFarmersrReadyToReturn":
+                enableReturnBtn();
+                break;
+            case "allFarmersrReadyWaiting":
+                enablePrepareBtn();
+                break;
+            }
+        }
+        
     }
 }

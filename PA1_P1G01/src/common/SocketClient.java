@@ -1,5 +1,6 @@
 package common;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -11,6 +12,11 @@ import java.util.logging.Logger;
  * @author Filipe Pires (85122) and João Alegria (85048)
  */
 public class SocketClient {
+    
+    /**
+     * Input stream of the socket.
+     */
+    private DataInputStream in;
     
     /**
      * Output stream of the socket.
@@ -32,6 +38,7 @@ public class SocketClient {
             while(this.socket==null){
                 this.socket = new Socket(ip, port);
             }
+            this.in = new DataInputStream( socket.getInputStream() );
             this.out = new DataOutputStream( socket.getOutputStream() );
             
         } catch (IOException ex) {
@@ -43,13 +50,16 @@ public class SocketClient {
      * Sends a text message to the subscribed socket server. 
      * @param message string containing the message to send.
      */
-    public void send(String message){
+    public String send(String message){
+        String response="";
         try {
             this.out.writeUTF(message);
             this.out.flush();
+            response = this.in.readUTF();
         } catch (IOException ex) {
             Logger.getLogger(SocketClient.class.getName()).log(Level.SEVERE, null, ex);
         }
+        return response;
     }
     
     /**
