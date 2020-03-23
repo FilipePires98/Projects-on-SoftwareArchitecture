@@ -1589,17 +1589,18 @@ public class ControlCenter extends javax.swing.JFrame implements UiAndMainContro
         @Override
         public void run() {
             String response = fiClient.send(this.command);
+            System.out.println(command+" | "+response);
             switch(response){
-                case "allFarmersrReadyToStart":
+                case "allFarmersReadyToStart":
                 enableStartBtn();
                 break;
-            case "allFarmersrReadyToCollect":
+            case "allFarmersReadyToCollect":
                 enableCollectBtn();
                 break;
-            case "allFarmersrReadyToReturn":
+            case "allFarmersReadyToReturn":
                 enableReturnBtn();
                 break;
-            case "allFarmersrReadyWaiting":
+            case "allFarmersReadyWaiting":
                 enablePrepareBtn();
                 break;
             }

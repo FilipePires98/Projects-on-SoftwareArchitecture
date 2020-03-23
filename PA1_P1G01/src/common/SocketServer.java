@@ -24,7 +24,7 @@ public class SocketServer implements Runnable, SocketServerService{
     /**
      * Output stream of the socket.
      */
-    private DataOutputStream out;
+//    private DataOutputStream out;
     
     /**
      * Port assigned to the server.
@@ -56,26 +56,26 @@ public class SocketServer implements Runnable, SocketServerService{
             ServerSocket serverSocket = new ServerSocket(this.port);
             this.socket = serverSocket.accept();
             this.in = new DataInputStream(socket.getInputStream());
-            this.out = new DataOutputStream(socket.getOutputStream());
+            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
             String receivedMessage="a";
             while(!receivedMessage.equals("endSimulationOrder")){
                 receivedMessage=this.in.readUTF();
                 System.out.println("Transmitted Message: "+receivedMessage);
-                this.mp.processMessage(this,receivedMessage);
+                this.mp.processMessage(out,receivedMessage);
             }
         } catch (IOException ex) {
             Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
-    @Override
-    public void send(String message){
-        try {
-            this.out.writeUTF(message);
-        } catch (IOException ex) {
-            Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
+//    @Override
+//    public void send(String message){
+//        try {
+//            this.out.writeUTF(message);
+//        } catch (IOException ex) {
+//            Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
+//        }
+//    }
     
     @Override
     public void close(){

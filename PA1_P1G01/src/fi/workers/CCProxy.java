@@ -11,6 +11,7 @@ import fi.ccInterfaces.StorehouseCCInt;
 import common.MessageProcessor;
 import common.SocketServerService;
 import fi.UiAndMainControlsFI;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -31,15 +32,15 @@ public class CCProxy implements MessageProcessor {
         /**
          * Message to be handled.
          */
-        private String message;
+        private final String message;
         
-        private SocketServerService out;
+        private final DataOutputStream out;
 
         /**
          * Constructor for the thread definition.
          * @param message Message to be handled.
          */
-        public ProcessingThread(SocketServerService out, String message) {
+        public ProcessingThread(DataOutputStream out, String message) {
             this.message = message;
             this.out=out;
         }
@@ -52,56 +53,67 @@ public class CCProxy implements MessageProcessor {
             try {
                 String[] processedMessage = this.message.split(";");
                 switch (processedMessage[0]) {
-                case "waitSimulationReady":
-                    storeHouse.waitAllFarmersReady();
-                    out.send("allFarmersrReadyWaiting");
-                    break;
-                case "prepareOrder":
-                    storeHouse.sendSelectionAndPrepareOrder(Integer.valueOf(processedMessage[1]),
-                            Integer.valueOf(processedMessage[2]), Integer.valueOf(processedMessage[3]),
-                            Integer.valueOf(processedMessage[4]));
-                    standing.waitForAllFarmers();
-                   out.send("allFarmersrReadyToStart");
-                    break;
-                case "startHarvestOrder":
-                    standing.sendStartOrder();
-                    granary.waitAllFarmersReadyToCollect();
-                    out.send("allFarmersrReadyToCollect");
-                    break;
-                case "collectOrder":
-                    granary.sendCollectOrder();
-                    granary.waitAllFarmersCollect();
-                    out.send("allFarmersrReadyToReturn");
-                    break;
-                case "returnOrder":
-                    granary.sendReturnOrder();
-                    storeHouse.waitAllFarmersReady();
-                    out.send("allFarmersrReadyWaiting");
-                    break;
-                case "stopHarvestOrder":
-                    storeHouse.control("stopHarvest");
-                    standing.control("stopHarvest");
-                    path.control("stopHarvest");
-                    granary.control("stopHarvest");
-                    storeHouse.waitAllFarmersReady();
-                    out.send("allFarmersrReadyWaiting");
-                    break;
-                case "endSimulationOrder":
-                    storeHouse.control("endSimulation");
-                    standing.control("endSimulation");
-                    path.control("endSimulation");
-                    granary.control("endSimulation");
-                    out.send("MessageProcessed");
-                    out.close();
-                    fi.closeSocketClient();
-                    fi.close();
-                    
-                    break;
+                    case "waitSimulationReady":
+                        storeHouse.waitAllFarmersReady();
+                        out.writeUTF("allFarmersReadyWaiting");
+                        break;
+                    case "prepareOrder":
+                        storeHouse.sendSelectionAndPrepareOrder(Integer.valueOf(processedMessage[1]),
+                                Integer.valueOf(processedMessage[2]), Integer.valueOf(processedMessage[3]),
+                                Integer.valueOf(processedMessage[4]));
+                        standing.waitForAllFarmers();
+                        out.writeUTF("allFarmersReadyToStart");
+                        break;
+                    case "startHarvestOrder":
+                        standing.sendStartOrder();
+                        granary.waitAllFarmersReadyToCollect();
+                        out.writeUTF("allFarmersReadyToCollect");
+                        break;
+                    case "collectOrder":
+                        granary.sendCollectOrder();
+                        granary.waitAllFarmersCollect();
+                        out.writeUTF("allFarmersReadyToReturn");
+                        break;
+                    case "returnOrder":
+                        granary.sendReturnOrder();
+                        storeHouse.waitAllFarmersReady();
+                        out.writeUTF("allFarmersReadyWaiting");
+                        break;
+                    case "stopHarvestOrder":
+                        storeHouse.control("stopHarvest");
+                        standing.control("stopHarvest");
+                        path.control("stopHarvest");
+                        granary.control("stopHarvest");
+                        storeHouse.waitAllFarmersReady();
+                        out.writeUTF("allFarmersReadyWaiting");
+                        break;
+                    case "endSimulationOrder":
+                        storeHouse.control("endSimulation");
+                        standing.control("endSimulation");
+                        path.control("endSimulation");
+                        granary.control("endSimulation");
+                        out.writeUTF("MessageProcessed");
+                        out.close();
+                        fi.closeSocketClient();
+                        fi.close();
+
+                        break;
                 }
             } catch (StopHarvestException ex) {
-                return;
+                System.out.println("BANANANA");
+                try {
+                    out.writeUTF("Unsuccessfull Action");
+                } catch (IOException ex1) {
+                    Logger.getLogger(CCProxy.class.getName()).log(Level.SEVERE, null, ex1);
+                }
             } catch (EndSimulationException ex) {
-                return;
+                try {
+                    out.writeUTF("Unsuccessfull Action");
+                } catch (IOException ex1) {
+                    Logger.getLogger(CCProxy.class.getName()).log(Level.SEVERE, null, ex1);
+                }
+            } catch (IOException ex) {
+                Logger.getLogger(CCProxy.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
@@ -158,7 +170,7 @@ public class CCProxy implements MessageProcessor {
      * @param message string containing the message to process
      */
     @Override
-    public void processMessage(SocketServerService out, String message) {
+    public void processMessage(DataOutputStream out, String message) {
         Thread processor = new Thread(new ProcessingThread(out, message));
         processor.start();
     }
